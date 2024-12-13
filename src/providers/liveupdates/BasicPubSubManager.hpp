@@ -119,8 +119,8 @@ public:
 
     void start()
     {
-        this->work_ = std::make_shared<boost::asio::io_service::work>(
-            this->websocketClient_.get_io_service());
+        this->work_ = std::make_shared<boost::asio::io_context::work>(
+            this->websocketClient_.get_io_context());
         this->mainThread_.reset(new std::thread([this] {
             // make sure we set in any case, even exceptions
             auto guard = qScopeGuard([&] {
@@ -299,7 +299,7 @@ private:
         this->addingClient_ = false;
         if (!this->pendingSubscriptions_.empty())
         {
-            runAfter(this->websocketClient_.get_io_service(),
+            runAfter(this->websocketClient_.get_io_context(),
                      this->connectBackoff_.next(), [this](auto /*timer*/) {
                          this->addClient();
                      });
@@ -409,7 +409,7 @@ private:
     std::atomic<bool> addingClient_{false};
     ExponentialBackoff<5> connectBackoff_{std::chrono::milliseconds(1000)};
 
-    std::shared_ptr<boost::asio::io_service::work> work_{nullptr};
+    std::shared_ptr<boost::asio::io_context::work> work_{nullptr};
 
     liveupdates::WebsocketClient websocketClient_;
     std::unique_ptr<std::thread> mainThread_;

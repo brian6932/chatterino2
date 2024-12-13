@@ -22,7 +22,7 @@ PubSubClient::PubSubClient(WebsocketClient &websocketClient,
     : websocketClient_(websocketClient)
     , handle_(handle)
     , heartbeatTimer_(std::make_shared<boost::asio::steady_timer>(
-          this->websocketClient_.get_io_service()))
+          this->websocketClient_.get_io_context()))
     , clientOptions_(clientOptions)
 {
 }
@@ -48,7 +48,7 @@ void PubSubClient::close(const std::string &reason,
                          websocketpp::close::status::value code)
 {
     boost::asio::post(
-        this->websocketClient_.get_io_service().get_executor(),
+        this->websocketClient_.get_io_context().get_executor(),
         [this, reason, code] {
             // We need to post this request to the io service executor
             // to ensure the weak pointer used in get_con_from_hdl is used in a safe way

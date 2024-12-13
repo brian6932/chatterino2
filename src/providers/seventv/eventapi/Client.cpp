@@ -14,7 +14,7 @@ Client::Client(liveupdates::WebsocketClient &websocketClient,
     , lastHeartbeat_(std::chrono::steady_clock::now())
     , heartbeatInterval_(heartbeatInterval)
     , heartbeatTimer_(std::make_shared<boost::asio::steady_timer>(
-          this->websocketClient_.get_io_service()))
+          this->websocketClient_.get_io_context()))
 {
 }
 

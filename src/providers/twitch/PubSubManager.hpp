@@ -5,7 +5,7 @@
 #include "util/ExponentialBackoff.hpp"
 #include "util/OnceFlag.hpp"
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <pajlada/signals/signal.hpp>
 #include <QJsonObject>
@@ -263,7 +263,7 @@ private:
 
     void runThread();
 
-    std::shared_ptr<boost::asio::io_service::work> work{nullptr};
+    std::shared_ptr<boost::asio::io_context::work> work{nullptr};
 
     const QString host_;
     const PubSubClientOptions clientOptions_;

@@ -557,8 +557,8 @@ void PubSub::addClient()
 
 void PubSub::start()
 {
-    this->work = std::make_shared<boost::asio::io_service::work>(
-        this->websocketClient.get_io_service());
+    this->work = std::make_shared<boost::asio::io_context::work>(
+        this->websocketClient.get_io_context());
     this->thread = std::make_unique<std::thread>([this] {
         // make sure we set in any case, even exceptions
         auto guard = qScopeGuard([&] {
@@ -968,7 +968,7 @@ void PubSub::onConnectionFail(WebsocketHandle hdl)
     this->addingClient = false;
     if (!this->requests.empty())
     {
-        runAfter(this->websocketClient.get_io_service(),
+        runAfter(this->websocketClient.get_io_context(),
                  this->connectBackoff.next(), [this](auto timer) {
                      this->addClient();  //
                  });
