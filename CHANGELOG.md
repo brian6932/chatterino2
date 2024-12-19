@@ -1,5 +1,9 @@
 # Changelog
 
+### Dankerino
+
+- Minor: Updated the RaccAttack URL. (#xxxx)
+
 ## Unversioned
 
 ## 2.5.2-beta.1
