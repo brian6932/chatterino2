@@ -196,15 +196,19 @@ void SplitInput::handleImagePaste(const QMimeData *source)
             "remove the image from the site. Are you okay with this?");
         auto *cancel = msgBox.addButton(QMessageBox::Cancel);
         auto *yes = msgBox.addButton(QMessageBox::Yes);
-        auto *yesDontAskAgain =
-            msgBox.addButton("Yes, don't ask again", QMessageBox::YesRole);
-
+        QPushButton *yesDontAskAgain = nullptr;
+        if (!getSettings()->dankerinoAlwaysAskUpload)
+        {
+            yesDontAskAgain =
+                msgBox.addButton("Yes, don't ask again", QMessageBox::YesRole);
+        }
         msgBox.setDefaultButton(QMessageBox::Yes);
 
         msgBox.exec();
 
         auto *clickedButton = msgBox.clickedButton();
-        if (clickedButton == yesDontAskAgain)
+        if (!getSettings()->dankerinoAlwaysAskUpload &&
+            clickedButton == yesDontAskAgain)
         {
             getSettings()->askOnImageUpload.setValue(false);
         }

@@ -52,6 +52,9 @@ void DankerinoPage::initLayout(GeneralPageView &layout)
     layout.addDescription("Gray-out recent messages was upstreamed as \"Reduce "
                           "opacity of message history\"");
     layout.addTitle("Behavior");
+    SettingWidget::checkbox("Always confirm for uploads",
+                            s.dankerinoAlwaysAskUpload)
+        ->addTo(layout);
     SettingWidget::checkbox("Lowercase tab-completed usernames",
                             s.lowercaseUsernames)
         ->addTo(layout);

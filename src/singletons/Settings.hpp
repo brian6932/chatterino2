@@ -873,6 +873,8 @@ public:
 
     BoolSetting dankerinoThreeLetterApiEasterEgg = {
         "/misc/dankerinoThreeLetterApiEasterEgg", false};
+    BoolSetting dankerinoAlwaysAskUpload = {"/misc/dankerinoAlwaysAskUpload",
+                                            false};
 
     BoolSetting allowBridgeImpersonation = {"/misc/allowBridgeImpersonation",
                                             false};
