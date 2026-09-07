@@ -519,6 +519,11 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                             s.hideMessageTimestampsWhenLive)
         ->addTo(layout);
 
+    SettingWidget::checkbox("Correct ASCII art wrapping", s.wrapAsciiArt)
+        ->setTooltip("Limit the width of messages containing ASCII art to "
+                     "match the width of Twitch web chat.")
+        ->addTo(layout);
+
     layout.addDropdown<QString>(
         "Message timestamp format",
         {"Disable", "h:mm", "hh:mm", "h:mm a", "hh:mm a", "h:mm:ss", "hh:mm:ss",
@@ -537,6 +542,21 @@ void GeneralPage::initLayout(GeneralPageView &layout)
                                    : args.value;
         },
         true, "a = am/pm, zzz = milliseconds");
+
+    SettingWidget::checkbox("Show header timestamps", s.showHeaderTimestamps)
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Show announcement header",
+                            s.showAnnouncementHeader)
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Show subscription header",
+                            s.showSubscriptionHeader)
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Show watch streak header", s.showWatchStreakHeader)
+        ->addTo(layout);
+
     layout.addDropdown<int>(
         "Limit message height",
         {"Never", "2 lines", "3 lines", "4 lines", "5 lines"},
@@ -1070,11 +1090,11 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         ->setTooltip("Show the stream title")
         ->addTo(layout);
 
-    layout.addSubtitle("R9K");
+    layout.addSubtitle("Unique chat (R9K)");
     auto toggleLocalr9kSeq = getApp()->getHotkeys()->getDisplaySequence(
         HotkeyCategory::Window, "toggleLocalR9K");
     QString toggleLocalr9kShortcut =
-        "an assigned hotkey (Window -> Toggle local R9K)";
+        "an assigned hotkey (Window -> Toggle local unique chat (R9K))";
     if (!toggleLocalr9kSeq.isEmpty())
     {
         toggleLocalr9kShortcut = toggleLocalr9kSeq.toString(
@@ -1504,7 +1524,10 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         s.linksDoubleClickOnly)
         ->setTooltip("When enabled, opening links/usercards requires "
                      "double-clicking.\nUseful for making sure you don't "
-                     "accidentally click on suspicious links.")
+                     "accidentally click on suspicious links.\nClicking a link "
+                     "once will pause the chat briefly to allow for a less "
+                     "accident-prone double-clicking.")
+        ->addKeywords({"pause"})
         ->addTo(layout);
 
     SettingWidget::checkbox("Unshorten links", s.unshortLinks)
@@ -1638,6 +1661,13 @@ void GeneralPage::initLayout(GeneralPageView &layout)
         {.min = 5, .max = 999, .singleStep = 1, .suffix = "s"})
         ->setTooltip("How often Chatterino polls the Twitch API for the "
                      "shared chat session status.")
+        ->addTo(layout);
+
+    SettingWidget::checkbox("Show shared chat badge for all messages",
+                            s.sharedChatAlwaysShowBadge)
+        ->setTooltip(
+            "If turned off, only messages from other participants have a "
+            "shared chat badge")
         ->addTo(layout);
 
     layout.addStretch();

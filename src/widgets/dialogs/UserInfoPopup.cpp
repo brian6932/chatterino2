@@ -322,7 +322,7 @@ UserInfoPopup::UserInfoPopup(bool closeAutomatically, Split *split)
                             [loginName] {
                                 auto *app = getApp();
                                 auto &window = app->getWindows()->createWindow(
-                                    WindowType::Popup, true);
+                                    WindowType::Popup, {});
                                 auto *split = window.getNotebook()
                                                   .getOrAddSelectedPage()
                                                   ->appendNewSplit(false);
@@ -1047,12 +1047,13 @@ void UserInfoPopup::updateUserData()
 
         this->setWindowTitle(TEXT_TITLE.arg(
             user.displayName, this->underlyingChannel_->getName()));
-        this->ui_.createdDateLabel->setText(
-            TEXT_CREATED.arg(user.createdAt.section("T", 0, 0)));
+        auto createdAt =
+            QDateTime::fromString(user.createdAt, Qt::ISODateWithMs);
+        auto createdStr = createdAt.toLocalTime().date().toString(Qt::ISODate);
+        this->ui_.createdDateLabel->setText(TEXT_CREATED.arg(createdStr));
         this->ui_.createdDateLabel->setToolTip(
-            formatLongFriendlyDuration(
-                QDateTime::fromString(user.createdAt, Qt::ISODateWithMs),
-                QDateTime::currentDateTimeUtc()) +
+            formatLongFriendlyDuration(createdAt,
+                                       QDateTime::currentDateTimeUtc()) +
             u" ago"_s);
         this->ui_.createdDateLabel->setMouseTracking(true);
         this->ui_.userIDLabel->setText(TEXT_USER_ID % user.id);
@@ -1152,7 +1153,8 @@ void UserInfoPopup::updateUserData()
                         QDateTime followedAt = QDateTime::fromString(
                             subageInfo.followingSince, Qt::ISODate);
                         QString followingSince =
-                            followedAt.toString("yyyy-MM-dd");
+                            followedAt.toLocalTime().date().toString(
+                                Qt::ISODate);
                         this->ui_.followageLabel->setText("❤ Following since " +
                                                           followingSince);
                         this->ui_.followageLabel->setToolTip(

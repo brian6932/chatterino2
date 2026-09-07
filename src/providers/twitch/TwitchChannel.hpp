@@ -12,6 +12,7 @@
 #include "common/UniqueAccess.hpp"
 #include "providers/ffz/FfzBadges.hpp"
 #include "providers/ffz/FfzEmotes.hpp"
+#include "providers/twitch/api/Helix.hpp"
 #include "providers/twitch/eventsub/SubscriptionHandle.hpp"
 #include "providers/twitch/TwitchEmotes.hpp"
 #include "util/QStringHash.hpp"
@@ -232,10 +233,10 @@ public:
     void markConnected();
 
     // Emotes
-    std::optional<EmotePtr> twitchEmote(const EmoteName &name) const;
-    std::optional<EmotePtr> bttvEmote(const EmoteName &name) const;
-    std::optional<EmotePtr> ffzEmote(const EmoteName &name) const;
-    std::optional<EmotePtr> seventvEmote(const EmoteName &name) const;
+    std::optional<EmotePtr> twitchEmote(EmoteNameView name) const;
+    std::optional<EmotePtr> bttvEmote(EmoteNameView name) const;
+    std::optional<EmotePtr> ffzEmote(EmoteNameView name) const;
+    std::optional<EmotePtr> seventvEmote(EmoteNameView name) const;
 
     std::shared_ptr<const EmoteMap> localTwitchEmotes() const;
     std::shared_ptr<const EmoteMap> bttvEmotes() const;
@@ -356,7 +357,8 @@ public:
 
     pajlada::Signals::Signal<const QString &> sendWaitUpdate;
 
-    pajlada::Signals::Signal<const QStringList &> sharedChatStatusChanged;
+    pajlada::Signals::Signal<const std::vector<HelixMinimalUser> &>
+        sharedChatStatusChanged;
 
     // Channel point rewards
     void addQueuedRedemption(const QString &rewardId,
@@ -403,7 +405,8 @@ public:
 
     bool isLoadingRecentMessages() const;
 
-    const QStringList &getSharedChatSessionParticipants() const;
+    const std::vector<HelixMinimalUser> &getSharedChatSessionParticipants()
+        const;
     // Pinned message
     /**
      * Fetches the currently pinned message for this channel via the Helix API.
@@ -628,7 +631,7 @@ private:
      * the broadcaster who owns the channel.
      * This list is passed to the UI for display.
      */
-    QStringList sharedChatSessionParticipants_;
+    std::vector<HelixMinimalUser> sharedChatSessionParticipants_;
 
     /**
      * Set of broadcasterIDs of broadcasters participating in a

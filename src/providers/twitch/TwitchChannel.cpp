@@ -127,6 +127,10 @@ TwitchChannel::TwitchChannel(const QString &name)
     this->signalHolder_.managedConnect(
         getApp()->getAccounts()->twitch.currentUserAboutToChange,
         [this](const auto & /*oldAccount*/, const auto & /*newAccount*/) {
+            qCDebug(chatterinoTwitchEventSub)
+                << "Current user about to change, drop all eventsub handles in "
+                   "preparation"
+                << this->roomId();
             this->eventSubChannelChatUserMessageHoldHandle.reset();
             this->eventSubChannelChatUserMessageUpdateHandle.reset();
             this->eventSubChannelModerateHandle.reset();
@@ -655,19 +659,26 @@ void TwitchChannel::onLiveStatusChanged(bool isLive, bool isInitialUpdate)
         qCDebug(chatterinoTwitch).nospace().noquote()
             << "[TwitchChannel " << this->getName() << "] Online";
 
+        QString streamId;
+        QString title;
+        {
+            const auto streamStatus = this->accessStreamStatus();
+            streamId = streamStatus->streamId;
+            title = streamStatus->title;
+        }
         getApp()->getNotifications()->notifyTwitchChannelLive({
             .channelId = this->roomId(),
+            .streamId = streamId,
             .channelName = this->getName(),
             .displayName = this->getDisplayName(),
-            .title = this->accessStreamStatus()->title,
+            .title = title,
             .isInitialUpdate = isInitialUpdate,
         });
 
         // Channel live message
         this->addMessage(
             MessageBuilder::makeLiveMessage(
-                this->getDisplayName(), this->roomId(),
-                this->accessStreamStatus()->title,
+                this->getDisplayName(), this->roomId(), title,
                 {MessageFlag::System, MessageFlag::DoNotTriggerNotification}),
             MessageContext::Original);
     }
@@ -1048,7 +1059,7 @@ SharedAccessGuard<const TwitchChannel::StreamStatus>
     return this->streamStatus_.accessConst();
 }
 
-std::optional<EmotePtr> TwitchChannel::twitchEmote(const EmoteName &name) const
+std::optional<EmotePtr> TwitchChannel::twitchEmote(EmoteNameView name) const
 {
     auto emotes = this->localTwitchEmotes();
     auto it = emotes->find(name);
@@ -1060,7 +1071,7 @@ std::optional<EmotePtr> TwitchChannel::twitchEmote(const EmoteName &name) const
     return it->second;
 }
 
-std::optional<EmotePtr> TwitchChannel::bttvEmote(const EmoteName &name) const
+std::optional<EmotePtr> TwitchChannel::bttvEmote(EmoteNameView name) const
 {
     auto emotes = this->bttvEmotes_.get();
     auto it = emotes->find(name);
@@ -1072,7 +1083,7 @@ std::optional<EmotePtr> TwitchChannel::bttvEmote(const EmoteName &name) const
     return it->second;
 }
 
-std::optional<EmotePtr> TwitchChannel::ffzEmote(const EmoteName &name) const
+std::optional<EmotePtr> TwitchChannel::ffzEmote(EmoteNameView name) const
 {
     auto emotes = this->ffzEmotes_.get();
     auto it = emotes->find(name);
@@ -1084,7 +1095,7 @@ std::optional<EmotePtr> TwitchChannel::ffzEmote(const EmoteName &name) const
     return it->second;
 }
 
-std::optional<EmotePtr> TwitchChannel::seventvEmote(const EmoteName &name) const
+std::optional<EmotePtr> TwitchChannel::seventvEmote(EmoteNameView name) const
 {
     auto emotes = this->seventvEmotes_.get();
     auto it = emotes->find(name);
@@ -1576,6 +1587,9 @@ void TwitchChannel::refreshPubSub()
 
     if (currentAccount->isAnon())
     {
+        qCDebug(chatterinoTwitchEventSub)
+            << "Current account is anon - drop all privileged eventsub handles"
+            << this->roomId();
         this->eventSubChannelModerateHandle.reset();
         this->eventSubAutomodMessageHoldHandle.reset();
         this->eventSubAutomodMessageUpdateHandle.reset();
@@ -1590,6 +1604,10 @@ void TwitchChannel::refreshPubSub()
 
     if (this->hasModRights())
     {
+        qCDebug(chatterinoTwitchEventSub)
+            << "Current account is mod - subscribe to privileged eventsub "
+               "handles"
+            << this->roomId();
         this->eventSubChannelModerateHandle =
             getApp()->getEventSub()->subscribe(eventsub::SubscriptionRequest{
                 .subscriptionType = "channel.moderate",
@@ -1681,6 +1699,10 @@ void TwitchChannel::refreshPubSub()
     }
     else
     {
+        qCDebug(chatterinoTwitchEventSub)
+            << "Current account is no longer a moderator - drop privileged "
+               "eventsub handles"
+            << this->roomId();
         this->eventSubChannelModerateHandle.reset();
         this->eventSubAutomodMessageHoldHandle.reset();
         this->eventSubAutomodMessageUpdateHandle.reset();
@@ -2534,7 +2556,8 @@ bool TwitchChannel::isLoadingRecentMessages() const
     return this->loadingRecentMessages_.test();
 }
 
-const QStringList &TwitchChannel::getSharedChatSessionParticipants() const
+const std::vector<HelixMinimalUser> &
+    TwitchChannel::getSharedChatSessionParticipants() const
 {
     return this->sharedChatSessionParticipants_;
 }
@@ -2629,7 +2652,7 @@ void TwitchChannel::refreshSharedChatSessionState()
                             this->sharedChatSessionParticipantIds_.insert(
                                 user.id);
                             this->sharedChatSessionParticipants_.push_back(
-                                user.displayName);
+                                {user.id, user.login, user.displayName});
                         }
                     }
 

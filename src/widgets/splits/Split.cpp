@@ -16,7 +16,6 @@
 #include "providers/twitch/TwitchChannel.hpp"
 #include "providers/twitch/TwitchIrcServer.hpp"
 #include "singletons/Fonts.hpp"
-#include "singletons/ImageUploader.hpp"
 #include "singletons/Settings.hpp"
 #include "singletons/Theme.hpp"
 #include "singletons/WindowManager.hpp"
@@ -55,6 +54,8 @@
 #include <QVBoxLayout>
 
 #include <functional>
+
+using namespace Qt::Literals;
 
 namespace chatterino {
 namespace {
@@ -236,74 +237,6 @@ Split::Split(QWidget *parent)
                                            // Forward textEdit's focusLost event
                                            this->focusLost.invoke();
                                        });
-
-    // this connection can be ignored since the SplitInput is owned by this Split
-    std::ignore = this->input_->ui_.textEdit->imagePasted.connect(
-        [this](const QMimeData *original) {
-            if (!getSettings()->imageUploaderEnabled)
-            {
-                return;
-            }
-
-            auto channel = this->getChannel();
-            auto *imageUploader = getApp()->getImageUploader();
-
-            auto [images, imageProcessError] =
-                imageUploader->getImages(original);
-            if (images.empty())
-            {
-                channel->addSystemMessage(
-                    QString(
-                        "An error occurred trying to process your image: %1")
-                        .arg(imageProcessError));
-                return;
-            }
-
-            if (getSettings()->askOnImageUpload.getValue())
-            {
-                QMessageBox msgBox(this->window());
-                msgBox.setWindowTitle("Chatterino");
-                msgBox.setText("Image upload");
-                msgBox.setInformativeText(
-                    "You are uploading an image to a 3rd party service not in "
-                    "control of the Chatterino team. You may not be able to "
-                    "remove the image from the site. Are you okay with this?");
-                auto *cancel = msgBox.addButton(QMessageBox::Cancel);
-                auto *yes = msgBox.addButton(QMessageBox::Yes);
-                auto *yesDontAskAgain = msgBox.addButton("Yes, don't ask again",
-                                                         QMessageBox::YesRole);
-
-                msgBox.setDefaultButton(QMessageBox::Yes);
-
-                msgBox.exec();
-
-                auto *clickedButton = msgBox.clickedButton();
-                if (clickedButton == yesDontAskAgain)
-                {
-                    getSettings()->askOnImageUpload.setValue(false);
-                }
-                else if (clickedButton == yes)
-                {
-                    // Continue with image upload
-                }
-                else if (clickedButton == cancel)
-                {
-                    // Not continuing with image upload
-                    return;
-                }
-                else
-                {
-                    // An unknown "button" was pressed - handle it as if cancel was pressed
-                    // cancel is already handled as the "escape" option, so this should never happen
-                    qCWarning(chatterinoImageuploader)
-                        << "Unhandled button pressed:" << clickedButton;
-                    return;
-                }
-            }
-
-            QPointer<ResizingTextEdit> edit = this->input_->ui_.textEdit;
-            imageUploader->upload(std::move(images), channel, edit);
-        });
 
     getSettings()->imageUploaderEnabled.connect(
         [this](const bool &val) {
@@ -817,7 +750,7 @@ void Split::openChannelInStreamlink(const QString channelName)
 {
     try
     {
-        openStreamlinkForChannel(channelName);
+        openStreamlinkForChannelOrUrl(channelName);
     }
     catch (const Exception &ex)
     {
@@ -831,7 +764,7 @@ void Split::openChannelInCustomPlayer(const QString channelName)
     openInCustomPlayer(channelName);
 }
 
-IndirectChannel Split::getIndirectChannel()
+IndirectChannel Split::getIndirectChannel() const
 {
     return this->channel_;
 }
@@ -870,7 +803,8 @@ void Split::setChannel(IndirectChannel newChannel)
             });
 
         this->channelSignalHolder_.managedConnect(
-            tc->sharedChatStatusChanged, [this](const QStringList &) {
+            tc->sharedChatStatusChanged,
+            [this](const std::vector<HelixMinimalUser> &) {
                 this->header_->updateChannelText();
             });
         this->pinnedBanner_->setChannel(tc);
@@ -1115,7 +1049,7 @@ void Split::explainSplitting()
 void Split::popup()
 {
     auto *app = getApp();
-    Window &window = app->getWindows()->createWindow(WindowType::Popup);
+    Window &window = app->getWindows()->createWindow(WindowType::Popup, {});
 
     auto *split = new Split(window.getNotebook().getOrAddSelectedPage());
 
@@ -1360,6 +1294,38 @@ void Split::drag()
 void Split::setInputReply(const MessagePtr &reply)
 {
     this->input_->setReply(reply);
+}
+
+SplitDescriptor Split::buildDescriptor() const
+{
+    SplitDescriptor descriptor;
+    descriptor.moderationMode_ = this->getModerationMode();
+    descriptor.filters_ = this->getFilters();
+    descriptor.spellCheckOverride = this->checkSpellingOverride();
+
+    auto chan = this->getIndirectChannel();
+    descriptor.type_ = qmagicenum::enumNameString(chan.getType());
+    switch (chan.getType())
+    {
+        case Channel::Type::Twitch:
+        case Channel::Type::Misc:
+            descriptor.channelName_ = chan.get()->getName();
+            break;
+
+        case Channel::Type::TwitchWhispers:
+        case Channel::Type::TwitchWatching:
+        case Channel::Type::TwitchMentions:
+        case Channel::Type::TwitchLive:
+        case Channel::Type::TwitchAutomod:
+
+        // FIXME: Remove these (#5703)
+        case Channel::Type::None:
+        case Channel::Type::Direct:
+        case Channel::Type::TwitchEnd:
+            break;
+    }
+
+    return descriptor;
 }
 
 void Split::unpause()
