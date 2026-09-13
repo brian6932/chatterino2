@@ -12,6 +12,7 @@
 #include "messages/search/AuthorPredicate.hpp"
 #include "messages/search/BadgePredicate.hpp"
 #include "messages/search/ChannelPredicate.hpp"
+#include "messages/search/ClientDetectionPredicate.hpp"
 #include "messages/search/LinkPredicate.hpp"
 #include "messages/search/MessageFlagsPredicate.hpp"
 #include "messages/search/RegexPredicate.hpp"
@@ -26,6 +27,8 @@
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
+
+#include <memory>
 
 namespace chatterino {
 
@@ -397,6 +400,11 @@ std::vector<std::unique_ptr<MessagePredicate>> SearchPopup::parsePredicates(
         {
             predicates.push_back(
                 std::make_unique<RegexPredicate>(value, isNegated));
+        }
+        else if (name == "client")
+        {
+            predicates.push_back(
+                std::make_unique<ClientDetectionPredicate>(value, isNegated));
         }
         else
         {
