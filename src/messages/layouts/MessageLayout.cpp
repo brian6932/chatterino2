@@ -470,6 +470,10 @@ void MessageLayout::updateBuffer(QPixmap *buffer,
                 backgroundColor = blendColors(
                     backgroundColor, QColor(getSettings()->androidColor));
                 break;
+            case Message::ClientDetectionStatus::AndroidNew:
+                backgroundColor = blendColors(
+                    backgroundColor, QColor(getSettings()->androidNewColor));
+                break;
             case Message::ClientDetectionStatus::IOS:
                 backgroundColor = blendColors(backgroundColor,
                                               QColor(getSettings()->iosColor));

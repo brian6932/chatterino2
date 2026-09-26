@@ -115,6 +115,9 @@ void DankerinoPage::initLayout(GeneralPageView &layout)
             ->addTo(layout);
         SettingWidget::colorButton("Android color", getSettings()->androidColor)
             ->addTo(layout);
+        SettingWidget::colorButton("Android (v31+) color",
+                                   getSettings()->androidNewColor)
+            ->addTo(layout);
         SettingWidget::colorButton("iOS color", getSettings()->iosColor)
             ->addTo(layout);
     }

@@ -87,6 +87,14 @@ const QRegularExpression SPACE_REGEX("\\s");
 
 Message::ClientDetectionStatus performClientDetection(const QString &nonce)
 {
+    if (nonce.size() >= 10 && nonce.size() <= 12)
+    {
+        bool charset = std::ranges::all_of(nonce, [](const QChar &c) {
+            return ('0' <= c && c <= '9') || ('a' <= c && c <= 'z');
+        });
+        return charset ? Message::ClientDetectionStatus::AndroidNew
+                       : Message::ClientDetectionStatus::Abnormal;
+    }
     if (nonce.size() == 32)
     {
         // matches /[0-9a-f]{32}/
