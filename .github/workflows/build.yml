@@ -447,6 +447,7 @@ jobs:
           prerelease: true
           name: Nightly Release
           tag: nightly-build
+          commit: dankerino
 
       - name: Update nightly-build tag
         run: |
